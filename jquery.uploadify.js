@@ -81,7 +81,6 @@ if(jQuery)(
 						debug           : false,
 						dragBox         : false,
 						dragBoxHover    : false,
-						dragBoxOnError  : false,
 						dragBoxOut      : false,
 						fileObjName     : 'Filedata',
 						fileSizeLimit   : 0,
@@ -223,7 +222,6 @@ if(jQuery)(
 					} else {
 						jQuery('#' + swfuploadify.movieName).addClass(settings.buttonClass);
 					}
-					
 					// Create the HTML5 Drag and Drop Handler functions
 					if (settings.dragBox) {
 						var dragBox = settings.dragBox;
@@ -250,42 +248,34 @@ if(jQuery)(
 									var data = e.dataTransfer;
 									for (var i = 0; i < data.files.length; i++) {
 										var file = data.files[i];
-
-
-										var boundary = '------multipartformboundary' + (new Date).getTime();
-										var dashdash = '--';
-										var crlf     = '\r\n';
-
-										// Build RFC2388 string.
-										var builder = '';
-
-										builder += dashdash+boundary+crlf
 										var xhr = new XMLHttpRequest();
-										
-										builder += 'Content-Disposition: form-data; name="user_file[]"';
-										if (file.fileName) {
-											builder += '; filename="' + file.fileName + '"';
-										}
-										builder += crlf+'Content-Type: application/octet-stream'+crlf+crlf;
+										onSelect(file);
 
-										// Append binary data.
-								      builder += file.getAsBinary()+crlf;
-
-								      // Write boundary.
-										builder += dashdash+boundary+crlf;
-
-
-										// Mark end of the request.
-										builder += dashdash+boundary+dashdash+crlf;
 
 										xhr.open("POST", settings.uploader, true);
-										xhr.setRequestHeader('content-type', 'multipart/form-data; boundary='+boundary);
-										xhr.sendAsBinary(builder);        
+										var postData = settings.postData;
+										var fd = new FormData();
+										for (var key in postData)
+										{
+											fd.append(key, postData[key]);
+										}
 
+										fd.append("Filedata", file);
+										xhr.send(fd);   
+    	
+										var onProgress = function(e){
+											console.log('progress');
+											console.log(e);
+										};
+										xhr.addEventListener("progress", onProgress, false);  
+										
+										//xhr.addEventListener("load", transferComplete, false);  
+										//xhr.addEventListener("error", transferFailed, false);  
+										//xhr.addEventListener("abort", transferCanceled, false);
+										
 										xhr.onload = function(e) { 
-											if (xhr.responseText && settings.dragBoxOnError) {
-												settings.dragBoxOnError(xhr.responseText);
-											}
+											onUploadComplete(file);
+											onUploadSuccess(file,xhr.responseText,true);
 										};
 									}
 								}
@@ -424,11 +414,13 @@ if(jQuery)(
 						
 						var stats = swfuploadify.getStats();
 						swfuploadify.queue.queueLength = stats.files_queued;
+
 						if (swfuploadify.queue.uploadQueue[0] == '*') {
 							if (swfuploadify.queue.queueLength > 0) {
 								swfuploadify.startUpload();
 							} else {
 								swfuploadify.queue.uploadQueue = [];
+
 								if (swfuploadify.settings.onQueueComplete) swfuploadify.settings.onQueueComplete(stats);
 							}
 						} else {
@@ -436,7 +428,7 @@ if(jQuery)(
 								swfuploadify.startUpload(swfuploadify.queue.uploadQueue.shift());
 							} else {
 								swfuploadify.queue.uploadQueue = [];
-								if (swfuploadify.settings.onQueueComplete) setting.onQueueComplete(stats);
+								if (swfuploadify.settings.onQueueComplete) swfuploadify.settings.onQueueComplete(stats);
 							}
 						}
 						if (jQuery.inArray('onUploadComplete',swfuploadify.settings.skipDefault) < 0) {

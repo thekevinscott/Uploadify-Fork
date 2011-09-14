@@ -35,6 +35,29 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 */
 
+
+
+/*****
+*
+*	Changed to allow for HTML5 Drag and Drop Functionality
+*
+*
+*	Much of this code taken from
+*	
+*	http://www.thebuzzmedia.com/html5-drag-and-drop-and-file-api-tutorial/
+*
+*	and
+*
+*	http://www.appelsiini.net/2009/10/html5-drag-and-drop-multiple-file-upload
+*
+*	Thanks gents!
+*
+*
+*	- Kevin
+*
+******/
+
+
 if(jQuery)(
 	function(jQuery){
 		jQuery.extend(jQuery.fn,{
@@ -56,6 +79,10 @@ if(jQuery)(
 						cancelImage     : 'uploadify-cancel.png',
 						checkExisting   : 'uploadify-check-existing.php',
 						debug           : false,
+						dragBox         : false,
+						dragBoxHover    : false,
+						dragBoxOnError  : false,
+						dragBoxOut      : false,
 						fileObjName     : 'Filedata',
 						fileSizeLimit   : 0,
 						fileTypeDesc    : 'All Files (*.*)',
@@ -197,6 +224,82 @@ if(jQuery)(
 						jQuery('#' + swfuploadify.movieName).addClass(settings.buttonClass);
 					}
 					
+					// Create the HTML5 Drag and Drop Handler functions
+					if (settings.dragBox) {
+						var dragBox = settings.dragBox;
+						if (dragBox&&dragBox.length) {
+							dragBox = dragBox[0];
+							
+							//var dragBox = document.getElementById("upload-drag-box")
+							var preventDefault = function(e) {
+							  e.stopPropagation();
+							  e.preventDefault();
+							};
+							var dragBoxOut = function(e) {
+								preventDefault(e);
+								if (settings.dragBoxOut) { settings.dragBoxOut(); }															
+							};
+							var dragBoxHover = function(e) {
+								preventDefault(e);
+								if (settings.dragBoxHover) { settings.dragBoxHover(); }
+							};
+							function drop(e) {
+								dragBoxOut(e);
+								var files = e.dataTransfer.files;
+								if (files.length > 0) { 
+									var data = e.dataTransfer;
+									for (var i = 0; i < data.files.length; i++) {
+										var file = data.files[i];
+
+
+										var boundary = '------multipartformboundary' + (new Date).getTime();
+										var dashdash = '--';
+										var crlf     = '\r\n';
+
+										// Build RFC2388 string.
+										var builder = '';
+
+										builder += dashdash+boundary+crlf
+										var xhr = new XMLHttpRequest();
+										
+										builder += 'Content-Disposition: form-data; name="user_file[]"';
+										if (file.fileName) {
+											builder += '; filename="' + file.fileName + '"';
+										}
+										builder += crlf+'Content-Type: application/octet-stream'+crlf+crlf;
+
+										// Append binary data.
+								      builder += file.getAsBinary()+crlf;
+
+								      // Write boundary.
+										builder += dashdash+boundary+crlf;
+
+
+										// Mark end of the request.
+										builder += dashdash+boundary+dashdash+crlf;
+
+										xhr.open("POST", settings.uploader, true);
+										xhr.setRequestHeader('content-type', 'multipart/form-data; boundary='+boundary);
+										xhr.sendAsBinary(builder);        
+
+										xhr.onload = function(e) { 
+											if (xhr.responseText && settings.dragBoxOnError) {
+												settings.dragBoxOnError(xhr.responseText);
+											}
+										};
+									}
+								}
+							};
+							// init event handlers
+							dragBox.addEventListener("dragenter", dragBoxHover, false);
+							dragBox.addEventListener("dragexit", dragBoxOut, false);
+							dragBox.addEventListener("dragover", preventDefault, false);
+							dragBox.addEventListener("drop", drop, false);
+							
+
+						}
+					}
+					
 					// -----------------------------
 					// Begin Event Handler Functions
 					// -----------------------------
@@ -318,6 +421,7 @@ if(jQuery)(
 					
 					// Triggered when a file upload successfully completes
 					function onUploadComplete(file) {
+						
 						var stats = swfuploadify.getStats();
 						swfuploadify.queue.queueLength = stats.files_queued;
 						if (swfuploadify.queue.uploadQueue[0] == '*') {

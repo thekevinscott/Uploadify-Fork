@@ -259,6 +259,9 @@ if(jQuery)(
 
 
 										xhr.open("POST", settings.uploader, true);
+										xhr.upload.addEventListener('progress', function(e){
+											onUploadProgress(file,e.loaded,e.total);
+										}, false);
 										var postData = settings.postData;
 										var fd = new FormData();
 										for (var key in postData)
@@ -269,19 +272,13 @@ if(jQuery)(
 										fd.append("Filedata", file);
 										xhr.send(fd);   
     	
-										var onProgress = function(e){
-
-										};
-										xhr.addEventListener("progress", onProgress, false);  
-										
-										//xhr.addEventListener("load", transferComplete, false);  
-										//xhr.addEventListener("error", transferFailed, false);  
-										//xhr.addEventListener("abort", transferCanceled, false);
 										
 										xhr.onload = function(e) { 
 											onUploadComplete(file);
 											onUploadSuccess(file,xhr.responseText,true);
 										};
+										
+										
 									}
 								}
 							};

@@ -224,6 +224,9 @@ if(jQuery)(
 					}
 					// Create the HTML5 Drag and Drop Handler functions
 					if (settings.dragBox) {
+						
+						var dragndropQueue = [];
+						
 						var dragBox = settings.dragBox;
 						if (dragBox&&dragBox.length) {
 							dragBox = dragBox[0];
@@ -249,6 +252,9 @@ if(jQuery)(
 									for (var i = 0; i < data.files.length; i++) {
 										var file = data.files[i];
 										var xhr = new XMLHttpRequest();
+										
+										dragndropQueue.push(file);
+										file.id = 'Dragndrop_0_'+dragndropQueue.length;
 										onSelect(file);
 
 
@@ -264,8 +270,7 @@ if(jQuery)(
 										xhr.send(fd);   
     	
 										var onProgress = function(e){
-											console.log('progress');
-											console.log(e);
+
 										};
 										xhr.addEventListener("progress", onProgress, false);  
 										

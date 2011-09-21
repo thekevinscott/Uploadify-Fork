@@ -244,40 +244,45 @@ if(jQuery)(
 								preventDefault(e);
 								if (settings.dragBoxHover) { settings.dragBoxHover(); }
 							};
-							function drop(e) {
+							var xhrUploadFile = function(file) {
+								
+								var xhr = new XMLHttpRequest();
+
+								dragndropQueue.push(file);
+								file.id = 'Dragndrop_0_'+dragndropQueue.length;
+								onSelect(file);
+
+								xhr.open("POST", settings.uploader, true);
+								xhr.upload.addEventListener('progress', function(e){
+									onUploadProgress(file,e.loaded,e.total);
+								}, false);
+								var postData = settings.postData;
+								var fd = new FormData();
+								for (var key in postData)
+								{
+									fd.append(key, postData[key]);
+								}
+
+								fd.append("Filedata", file);
+								xhr.send(fd);   
+
+								xhr.onload = function(e) { 
+									onUploadComplete(file);
+									onUploadSuccess(file,xhr.responseText,true);
+								};
+								
+							
+							}
+							var drop = function(e) {
+
 								dragBoxOut(e);
 								var files = e.dataTransfer.files;
+								
 								if (files.length > 0) { 
 									var data = e.dataTransfer;
 									for (var i = 0; i < data.files.length; i++) {
 										var file = data.files[i];
-										var xhr = new XMLHttpRequest();
-										
-										dragndropQueue.push(file);
-										file.id = 'Dragndrop_0_'+dragndropQueue.length;
-										onSelect(file);
-
-
-										xhr.open("POST", settings.uploader, true);
-										xhr.upload.addEventListener('progress', function(e){
-											onUploadProgress(file,e.loaded,e.total);
-										}, false);
-										var postData = settings.postData;
-										var fd = new FormData();
-										for (var key in postData)
-										{
-											fd.append(key, postData[key]);
-										}
-
-										fd.append("Filedata", file);
-										xhr.send(fd);   
-    	
-										
-										xhr.onload = function(e) { 
-											onUploadComplete(file);
-											onUploadSuccess(file,xhr.responseText,true);
-										};
-										
+										xhrUploadFile(file);								
 										
 									}
 								}
